@@ -1,0 +1,56 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides:          icecast-kh
+# Required-Start:    $network
+# Required-Stop:     $network
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: Stop/start/reload Icecast/Icecast-KH serrvice
+### END INIT INFO
+
+# Author: Adel Sachkov <adel.sachkov@gmail.com>
+
+DAEMON_NAME=icecast
+DAEMON_DESC=Icecast-KH
+CONF_FILE=/etc/icecast/icecast.xml
+DAEMON=/usr/local/bin/icecast
+DAEMON_ARGS="-c $CONF_FILE -b &"
+LOGFILE="/var/log/icecast/daemon.log"
+
+[ -x $DAEMON ] || exit 0
+
+case "$1" in
+
+ start)
+  # Start daemon.
+  pid=$(pidof $DAEMON_NAME)
+  if [ ! -z "$pid" ]; then echo "Daemon $DAEMON_NAME is already running at pid $pid."; else echo "Starting $DAEMON_NAME streaming server."; $DAEMON $DAEMON_ARGS >> $LOGFILE; fi
+  echo
+ ;;
+
+ stop)
+  # Stop daemon.
+  pid=$(pidof $DAEMON_NAME)
+  if [ -z "$pid" ]; then echo "Daemon $DAEMON_NAME is not running."; else echo "Stopping $DAEMON_NAME streaming server."; kill $pid >> $LOGFILE 2>&1; fi
+  echo
+ ;;
+
+ status)
+  pid=$(pidof $DAEMON_NAME)
+  if [ -z "$pid" ]; then echo "Daemon $DAEMON_NAME is not running."; else echo "Daemon $DAEMON_NAME is running at PID $pid."; fi
+  echo
+ ;;
+
+ reload)
+  pid=$(pidof $DAEMON_NAME)
+  if [ -z "$pid" ]; then echo "Daemon $DAEMON_NAME is not running."; else echo "Reloading $DAEMON_NAME..."; kill -HUP $pid >> $LOGFILE 2>&1; fi
+  echo
+ ;;
+
+ *)
+  echo $"Usage: $0 {start|stop|status|reload}"
+  RETVAL=1
+ ;;
+esac
+
+exit 0
