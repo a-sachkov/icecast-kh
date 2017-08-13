@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<songs>
+    <song>
+        <arturl>{arturl}</arturl>
+        <artist>{artist}</artist>
+        <title>{title}</title>
+        <album>{album}</album>
+        <size>{size}</size>
+    </song>
+</songs>

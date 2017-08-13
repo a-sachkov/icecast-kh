@@ -1,0 +1,13 @@
+url = dict(
+    static='http://static.<yourserver>/',               # url where your covers are placed
+    default='http://static.<yourserver>/default/',      # url for default covers if mp3 file has no cover
+    stats='http://<yourserver>/status-json.xsl'         # icecast stats page (JSON)
+)
+path = dict(
+    covers='/var/wwws/<yourserver>/static/',            # dir on server where covers will be placed
+    default='/var/wwws/<yourserver>/static/default/',   # dir on server where default covers are located
+    music='/var/music/'                                 # dir on server where all your mp3's are stored
+)
+stats_stream = '/flv'                                   # man stream for get current playing song
+cover_size = '600'                                      # default cover size (width and height)
+log_file = "/var/log/icecast/api.log"                   # api log file. must be writeable for webserver user
