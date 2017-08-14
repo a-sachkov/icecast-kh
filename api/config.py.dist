@@ -8,6 +8,6 @@ path = dict(
     default='/var/wwws/<yourserver>/static/default/',   # dir on server where default covers are located
     music='/var/music/'                                 # dir on server where all your mp3's are stored
 )
-stats_stream = '/flv'                                   # man stream for get current playing song
+stats_stream = '/radio'                                 # main stream for get current playing song
 cover_size = '600'                                      # default cover size (width and height)
 log_file = "/var/log/icecast/api.log"                   # api log file. must be writeable for webserver user
