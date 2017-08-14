@@ -29,7 +29,7 @@ def get_current_song(stats_url, stats_stream):
     if stats_stream not in stats:
         logging.error('get_current_song: Can not find stream \"%s\" in stats data', stats_stream)
         return False
-    return stats[stats_stream]['title']
+    return stats[stats_stream]['title'].encode("utf-8")
 
 
 def find_file(name, path):
