@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 # coding=utf-8
 import cgi
+import hashlib
 import json
 import logging
 import os
 import random
 import urllib2
+from shutil import copyfile
 
 import mutagen.mp3
 from PIL import Image
@@ -18,8 +20,7 @@ def get_current_song(stats_url, stats_stream):
     Retruns current playing song - artist and title
     :param stats_url: url points to icecast stats url (JSON format)
     :param stats_stream: main stream to get info
-    :return: string
-    "Artist - Title"
+    :return: string "Artist - Title"
     """
     try:
         stats = json.loads(urllib2.urlopen('http://radio1838.me:1838/status-json.xsl').read())
@@ -36,14 +37,14 @@ def find_file(name, path):
     """
     Finds file in path
     :param name: file name
-    :param path: path to recursive search
+    :param path: path to search recursively
     :return:
-        string with full file name (with path) if file found
+        string with path where file was found
         false - otherwise
     """
     for root, dirs, files in os.walk(path):
         if name in files:
-            return os.path.join(root, name)
+            return root
 
 
 def extract_cover(local_file, covers_dir, cover_name):
@@ -90,12 +91,34 @@ def resize_image(image_file, new_size):
     except:
         logging.error('resize_image: Can not open mage file \"%s\"', image_file)
         return False
-    if max(img.size) > new_size:
+    if max(img.size) != new_size:
         k = float(new_size) / float(max(img.size))
         new_img = img.resize(tuple([int(k * x) for x in img.size]), Image.ANTIALIAS)
         img.close()
         new_img.save(image_file)
     return True
+
+
+def generate_album_art(local_path, album_cover_path, album_cover_name):
+    """
+    Searches album cover art at album arts path, if not found tries to generate it
+    :param local_path:
+    :param album_cover_path:
+    :param album_cover_name:
+    :rtype bool
+    :return:
+        False - no cover art found neither in local path nor at albums cover arts path
+        True - otherwise
+    """
+    if os.path.isfile(album_cover_path + hashlib.md5(local_path).hexdigest() + '.jpg'):
+        return True
+    elif os.path.isfile('/'.join([local_path, album_cover_name])):
+        try:
+            copyfile('/'.join([local_path, album_cover_name]), album_cover_path + hashlib.md5(local_path).hexdigest() + '.jpg')
+            return True
+        except:
+            return False
+    return False
 
 
 def normalize_filename(filename):
@@ -105,13 +128,20 @@ def normalize_filename(filename):
     :return:
     returns normalized string
     """
-    replacements = {"?": "!", "/": ","}
+    replacements = {"?": "!", "/": ",", "'": " "}
     for word, replace in replacements.items():
         filename = filename.replace(word, replace)
     return filename
 
 
-def generate_xml(arguments):
+# TODO: cleanup this mess
+def generate_page(arguments):
+    """
+    Generates page from template
+    :param arguments:
+    :return:
+        xml file
+    """
     header = "Content-Type: application/xml; charset=UTF-8\n\n"
     template = 'templated_page.xml' if bool(arguments) else 'empty_page.xml'
     with open(template, 'r') as xml_file:
@@ -120,7 +150,7 @@ def generate_xml(arguments):
 
 if __name__ == '__main__':
 
-    logging.basicConfig(filename=config.log_file, level=logging.INFO, format='[%(asctime)s] %(message)s')
+    logging.basicConfig(filename=config.path['log'], level=logging.INFO, format='[%(asctime)s] %(message)s')
 
     default_covers = []
     for (dirpath, dirnames, filenames) in os.walk(config.path['default']):
@@ -145,19 +175,34 @@ if __name__ == '__main__':
 
         mp3_file = file_name + '.mp3'
         art_file = file_name + '.jpg'
+        local_path = find_file(mp3_file, config.path['music'])
 
-        local_file = find_file(mp3_file, config.path['music'])
-
-        if not local_file:
+        # there is no file you're looking for
+        if not local_path:
             logging.error('File \"%s.mp3\" not found in %s', file_name, config.path['music'])
             art_url = config.url['default'] + random.choice(default_covers)
-        elif os.path.isfile(config.path['covers'] + art_file):
-            art_url = config.url['static'] + file_name + '.jpg'
-        elif not extract_cover(local_file, config.path['covers'], art_file):
-            art_url = config.url['default'] + random.choice(default_covers)
         else:
-            resize_image(config.path['covers'] + art_file, config.cover_size)
-            art_url = config.url['static'] + file_name + '.jpg'
+            # we already got an image for file
+            if os.path.isfile(config.path['covers'] + art_file):
+                art_url = config.url['static'] + art_file
+
+            # wile has cover
+            elif extract_cover('/'.join([local_path, mp3_file]), config.path['covers'], art_file):
+                resize_image(config.path['covers'] + art_file, config.cover_size)
+                art_url = config.url['static'] + file_name + '.jpg'
+
+            # we have album cover
+            elif generate_album_art(local_path, config.path['albums_covers'], config.files['cover']):
+                art_url = config.url['albums_covers'] + hashlib.md5(local_path).hexdigest() + '.jpg'
+
+            # we have artist cover
+            elif os.path.isfile(config.path['artists_covers'] + artist + '.jpg'):
+                art_url = config.url['artists_covers'] + artist + '.jpg'
+
+            # return one of default covers
+            else:
+                logging.error('%s', config.path['artists_covers'] + artist + '.jpg')
+                art_url = config.url['default'] + random.choice(default_covers)
 
         tags = {'arturl': cgi.escape(art_url),
                 'artist': cgi.escape(artist),
@@ -165,4 +210,4 @@ if __name__ == '__main__':
                 'album': 'Various',
                 'size': config.cover_size}
 
-    print generate_xml(tags)
+    print generate_page(tags)
