@@ -15,7 +15,7 @@ from PIL import Image
 import config
 
 
-def get_current_song(stats_url, stats_stream):
+def get_now_playing(stats_url, stats_stream):
     """
     Retruns current playing song - artist and title
     :param stats_url: url points to icecast stats url (JSON format)
@@ -23,7 +23,7 @@ def get_current_song(stats_url, stats_stream):
     :return: string "Artist - Title"
     """
     try:
-        stats = json.loads(urllib2.urlopen('http://radio1838.me:1838/status-json.xsl').read())
+        stats = json.loads(urllib2.urlopen(stats_url).read())
     except:
         logging.error('get_current_song: Can not open stats url \"%s\"', stats_url)
         return False
@@ -89,8 +89,8 @@ def resize_image(image_file, new_size):
     try:
         img = Image.open(image_file)
     except:
-        logging.error('resize_image: Can not open mage file \"%s\"', image_file)
         return False
+    logging.error('resize_image from: \"%s\"', max(img.size))
     if max(img.size) != new_size:
         k = float(new_size) / float(max(img.size))
         new_img = img.resize(tuple([int(k * x) for x in img.size]), Image.ANTIALIAS)
@@ -164,7 +164,7 @@ if __name__ == '__main__':
         tags = {}
     else:
         if 'artist' not in query_string and 'title' not in query_string:
-            now_playing = get_current_song(config.url['stats'], config.stats_stream).split(' - ', 1)
+            now_playing = get_now_playing(config.url['stats'], config.stats_stream).split(' - ', 1)
             artist = now_playing[0]
             title = now_playing[1]
         else:
@@ -197,11 +197,11 @@ if __name__ == '__main__':
 
             # we have artist cover
             elif os.path.isfile(config.path['artists_covers'] + artist + '.jpg'):
+                resize_image(config.path['artists_covers'] + artist + '.jpg', config.cover_size)
                 art_url = config.url['artists_covers'] + artist + '.jpg'
 
             # return one of default covers
             else:
-                logging.error('%s', config.path['artists_covers'] + artist + '.jpg')
                 art_url = config.url['default'] + random.choice(default_covers)
 
         tags = {'arturl': cgi.escape(art_url),
