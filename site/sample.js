@@ -18,7 +18,8 @@ function xmlParser(xml) {
     var song = artist.concat(" &mdash; ").concat(title);
 
     if (now_playing !== song) {
-        jQuery('div.top-div > div.now_playing').html("<span class=\"title\">Now playing: </span><span class=\"song\"><marquee>".concat(song).concat("</marquee></span>"));
+        jQuery('div.now_playing').html(song);
+        jQuery('div.cover_art').html(arturl);
         now_playing = song;
     }
 };
