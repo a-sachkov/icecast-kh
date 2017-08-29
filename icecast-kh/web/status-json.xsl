@@ -10,6 +10,7 @@
             {
             "name" : "<xsl:value-of select="server_name"/>",
             "listeners" : "<xsl:value-of select="listeners"/>",
+            "listener_peak" : "<xsl:value-of select="listener_peak"/>",
             "description" : "<xsl:value-of select="server_description"/>",
             "title" : "<xsl:value-of select="title"/>",
             "genre" : "<xsl:value-of select="genre"/>",
