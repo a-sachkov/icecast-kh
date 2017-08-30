@@ -1,10 +1,10 @@
-What is it?
--------------
+# What is it?
+
+## init.d
 My Icecast/Icecast-KH init.d script for Debian.
 Written as simple as possible using only standard commands for better cross-platforming.
 
-Installation
--------------
+### Installation:
  Put script into /etc/init.d dir, then:
 
      sudo chmod 755 /etc/init.d/icecast-kh
@@ -16,13 +16,18 @@ Installation
      sudo mkdir /var/log/icecast
      sudo chown -R icecast:icecast /var/log/icecast
 
-Usage
--------------
+Usage:
 
     sudo service icecast-kh {start|stop|status|reload}
     or
     sudo systemctl start|stop|status|reload icecast-kh.service
 
-TODO
--------------
+### TODO:
 Add restart section.
+
+
+## WEB
+status-json.xsl - generates 'now playing' info in JSON format. Based on Namikiri's (https://habrahabr.ru/users/namikiri/) version.
+
+### Installation:
+ Put script into icecast-kh's web directory ( e.g.: /usr/local/share/icecast/web/ )
