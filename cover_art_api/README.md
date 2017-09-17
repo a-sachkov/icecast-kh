@@ -32,3 +32,6 @@ Put api.py to your web server. Don't forget to make it executable. Rename `confi
 Example config file for nginx server you can find at `./nginx` directory.
 
 If you're using IceCast-KH instead of IceCast - put [status-json.xsl](https://github.com/adel-s/radio/blob/master/icecast-kh/web/status-json.xsl) file to your IceCast-KH web directory (usually it's `/usr/local/share/icecast/web/`)
+
+### jQuery
+If you need access to API from web-page - there are sample jQuery script at `./web` directory. The function sends GET request to API and parses returned .XML file to get current playing song and cover art.
