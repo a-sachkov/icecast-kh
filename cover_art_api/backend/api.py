@@ -27,6 +27,7 @@ def get_now_playing(stats_url, stats_stream):
     except:
         logging.error('get_current_song: Can not open stats url \"%s\"', stats_url)
         return False
+
     if stats_stream not in stats:
         logging.error('get_current_song: Can not find stream \"%s\" in stats data', stats_stream)
         return False
@@ -89,8 +90,9 @@ def resize_image(image_file, new_size):
     try:
         img = Image.open(image_file)
     except:
+        logging.error('Can not open image: \"%s\"', image_file)
         return False
-    logging.error('resize_image from: \"%s\"', max(img.size))
+
     if max(img.size) != new_size:
         k = float(new_size) / float(max(img.size))
         new_img = img.resize(tuple([int(k * x) for x in img.size]), Image.ANTIALIAS)
@@ -159,12 +161,17 @@ if __name__ == '__main__':
 
     query_string = cgi.FieldStorage()
 
-    if not bool(query_string):
+    if not query_string:
         logging.warning('Mailformed request \"%s\"', query_string)
         tags = {}
+    elif config.tokens and ('partner_token' not in query_string or query_string['partner_token'].value not in config.tokens):
+        logging.error('Unauthorized request: \"%s\"', query_string)
+        header = "Status: 401 Unauthorized\n\n"
+        print header
     else:
         if 'artist' not in query_string and 'title' not in query_string:
-            now_playing = get_now_playing(config.url['stats'], config.stats_stream).split(' - ', 1)
+            stream = config.default_stream if 'stream' not in query_string else query_string['stream'].value
+            now_playing = get_now_playing(config.url['stats'], stream).split(' - ', 1)
             artist = now_playing[0]
             title = now_playing[1]
         else:
@@ -209,5 +216,4 @@ if __name__ == '__main__':
                 'title': cgi.escape(title),
                 'album': 'Various',
                 'size': config.cover_size}
-
-    print generate_page(tags)
+        print generate_page(tags)
