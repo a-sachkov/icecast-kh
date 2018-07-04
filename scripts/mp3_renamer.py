@@ -18,6 +18,10 @@ def get_tags(mp3_file):
     dictionary contained artist and title tags
     """
     audio = EasyID3(mp3_file)
+
+    if 'artist' not in audio.keys() or 'title' not in audio.keys():
+        return None
+
     return {'artist': audio['artist'], 'title': audio['title']}
 
 
@@ -37,6 +41,7 @@ def normalize_filename(filename):
 if __name__ == '__main__':
 
     start_time = time.time()
+    skipped = 0
 
     if len(sys.argv) == 1:
         print "Usage: mp3_renamer.py /path/to/check/ [--force-rename]"
@@ -62,6 +67,12 @@ if __name__ == '__main__':
 
     for x in mp3s:
         tags = get_tags('/'.join([mp3s[x]['path'], mp3s[x]['filename']]))
+
+        if not tags:
+            print "File {}/{} skipped due to missed tags.".format(mp3s[x]['path'], mp3s[x]['filename'])
+            skipped += 1
+            continue
+
         expected_name = normalize_filename(
             ''.join(tags['artist']).encode("utf-8") + ' - ' + ''.join(tags['title']).encode("utf-8") + search_pattern)
         local_name = mp3s[x]['filename']
@@ -78,7 +89,8 @@ if __name__ == '__main__':
                 except Exception, e:
                     print "Can't rename file:", repr(e)
             else:
-                print ''.join(['File "', mp3s[x]['path'], '/', expected_name, '" already exists. Skipping rename. For rename those files use --force-rename option.'])
+                print "File {}/{} already exists. Rename skipped. For rename those files use --force-rename option.".format(mp3s[x]['path'], expected_name)
+                skipped += 1
 
     # Some stats
-    print len(mp3s), "files were checked,", round(time.time() - start_time, 2), "seconds spent."
+    print "{} files were checked, {} skipped (see above), {} seconds spent.".format(len(mp3s), skipped, round(time.time() - start_time, 2))
