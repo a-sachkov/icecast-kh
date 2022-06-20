@@ -6,7 +6,8 @@ import json
 import logging
 import os
 import random
-import urllib2
+import sys
+import urllib.request
 from shutil import copyfile
 
 import mutagen.mp3
@@ -17,21 +18,22 @@ import config
 
 def get_now_playing(stats_url, stats_stream):
     """
-    Retruns current playing song - artist and title
+    Returns current playing song - artist and title
     :param stats_url: url points to icecast stats url (JSON format)
     :param stats_stream: main stream to get info
     :return: string "Artist - Title"
     """
     try:
-        stats = json.loads(urllib2.urlopen(stats_url).read())
+        stats = json.loads(urllib.request.urlopen(stats_url).read())
     except:
         logging.error('get_current_song: Can not open stats url \"%s\"', stats_url)
         return False
 
-    if stats_stream not in stats:
+    if stats_stream not in stats.keys():
         logging.error('get_current_song: Can not find stream \"%s\" in stats data', stats_stream)
         return False
-    return stats[stats_stream]['title'].encode("utf-8")
+        
+    return stats[stats_stream]['title']
 
 
 def find_file(name, path):
@@ -112,11 +114,12 @@ def generate_album_art(local_path, album_cover_path, album_cover_name):
         False - no cover art found neither in local path nor at albums cover arts path
         True - otherwise
     """
-    if os.path.isfile(album_cover_path + hashlib.md5(local_path).hexdigest() + '.jpg'):
+    
+    if os.path.isfile(album_cover_path + hashlib.md5(local_path.encode('utf-8')).hexdigest() + '.jpg'):
         return True
     elif os.path.isfile('/'.join([local_path, album_cover_name])):
         try:
-            copyfile('/'.join([local_path, album_cover_name]), album_cover_path + hashlib.md5(local_path).hexdigest() + '.jpg')
+            copyfile('/'.join([local_path, album_cover_name]), album_cover_path + hashlib.md5(local_path.encode('utf-8')).hexdigest() + '.jpg')
             return True
         except:
             return False
@@ -130,7 +133,7 @@ def normalize_filename(filename):
     :return:
     returns normalized string
     """
-    replacements = {"?": "!", "/": ",", "'": " "}
+    replacements = {"/": ",", "\"": "_", '"': "'", "*": "-", "?": "!"}
     for word, replace in replacements.items():
         filename = filename.replace(word, replace)
     return filename
@@ -166,8 +169,8 @@ if __name__ == '__main__':
         tags = {}
     elif config.tokens and ('partner_token' not in query_string or query_string['partner_token'].value not in config.tokens):
         logging.error('Unauthorized request: \"%s\"', query_string)
-        header = "Status: 401 Unauthorized\n\n"
-        print header
+        header = "Status: 403 Forbidden\n\n"
+        print(header)
     else:
         if 'artist' not in query_string and 'title' not in query_string:
             stream = config.default_stream if 'stream' not in query_string else query_string['stream'].value
@@ -182,10 +185,10 @@ if __name__ == '__main__':
 
         mp3_file = file_name + '.mp3'
         art_file = file_name + '.jpg'
-        local_path = find_file(mp3_file, config.path['music'])
+        local_file = find_file(mp3_file, config.path['music'])
 
         # there is no file you're looking for
-        if not local_path:
+        if not local_file:
             logging.error('File \"%s.mp3\" not found in %s', file_name, config.path['music'])
             art_url = config.url['default'] + random.choice(default_covers)
         else:
@@ -194,13 +197,13 @@ if __name__ == '__main__':
                 art_url = config.url['static'] + art_file
 
             # wile has cover
-            elif extract_cover('/'.join([local_path, mp3_file]), config.path['covers'], art_file):
+            elif extract_cover('/'.join([local_file, mp3_file]), config.path['covers'], art_file):
                 resize_image(config.path['covers'] + art_file, config.cover_size)
                 art_url = config.url['static'] + file_name + '.jpg'
 
             # we have album cover
-            elif generate_album_art(local_path, config.path['albums_covers'], config.files['cover']):
-                art_url = config.url['albums_covers'] + hashlib.md5(local_path).hexdigest() + '.jpg'
+            elif generate_album_art(local_file, config.path['albums_covers'], config.files['cover']):
+                art_url = config.url['albums_covers'] + hashlib.md5(local_file.encode('utf-8')).hexdigest() + '.jpg'
 
             # we have artist cover
             elif os.path.isfile(config.path['artists_covers'] + artist + '.jpg'):
@@ -211,9 +214,10 @@ if __name__ == '__main__':
             else:
                 art_url = config.url['default'] + random.choice(default_covers)
 
-        tags = {'arturl': cgi.escape(art_url),
-                'artist': cgi.escape(artist),
-                'title': cgi.escape(title),
+        tags = {'arturl': art_url,
+                'artist': artist,
+                'title': title,
                 'album': 'Various',
                 'size': config.cover_size}
-        print generate_page(tags)
+
+        print(generate_page(tags))
