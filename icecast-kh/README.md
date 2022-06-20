@@ -1,7 +1,7 @@
 # What is it?
 
 ## WARNING
-This repo is probably outdated. Currently icecast is provided as apt package, contains all necessary runtime scripts. Also Icecast provides json stats page out of the box, see [corresponding docs](https://icecast.org/docs/icecast-trunk/server_stats/).
+This part of the repo is probably outdated. Currently icecast is provided as apt package, contains all necessary runtime scripts. Also Icecast provides json stats page out of the box, see [corresponding docs](https://icecast.org/docs/icecast-trunk/server_stats/).
 
 ## init.d
 My Icecast/Icecast-KH init.d script for Debian.
