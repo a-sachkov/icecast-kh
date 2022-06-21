@@ -2,14 +2,12 @@
 # coding=utf-8
 import cgi
 import hashlib
-import json
 import logging
 import os
 import random
-import sys
 import urllib.request
 from shutil import copyfile
-
+import xml.etree.ElementTree as ET
 import mutagen.mp3
 from PIL import Image
 
@@ -18,22 +16,36 @@ import config
 
 def get_now_playing(stats_url, stats_stream):
     """
-    Returns current playing song - artist and title
-    :param stats_url: url points to icecast stats url (JSON format)
+    Returns current playing song - artist and title using auth to admin realm
+    :param stats_url: url points to icecast stats url (xml)
     :param stats_stream: main stream to get info
     :return: string "Artist - Title"
     """
+    auth_user = config.auth_user
+    auth_pass = config.auth_pass
+
+    passman = urllib.request.HTTPPasswordMgrWithDefaultRealm()
+    passman.add_password(None, stats_url, auth_user, auth_pass)
+    auth_handler = urllib.request.HTTPBasicAuthHandler(passman)
+    opener = urllib.request.build_opener(auth_handler)
+    urllib.request.install_opener(opener)
+
     try:
-        stats = json.loads(urllib.request.urlopen(stats_url).read())
-    except:
-        logging.error('get_current_song: Can not open stats url \"%s\"', stats_url)
+        res = urllib.request.urlopen(stats_url)
+    except urllib.error.URLError as err:
+        logging.error(f'get_current_song: Can not open stats url \"{stats_url}\": {err}')
         return False
 
-    if stats_stream not in stats.keys():
-        logging.error('get_current_song: Can not find stream \"%s\" in stats data', stats_stream)
+    res_body = res.read()
+    root = ET.fromstring(res_body)
+
+    try:
+        title = root.findall(f"./source/[@mount='{stats_stream}']/title")[0].text
+    except IndexError as err:
+        logging.error(f'get_current_song: Can not find stream \"{stats_stream}\" in stats data: {err}')
         return False
-        
-    return stats[stats_stream]['title']
+
+    return title
 
 
 def find_file(name, path):
@@ -114,7 +126,7 @@ def generate_album_art(local_path, album_cover_path, album_cover_name):
         False - no cover art found neither in local path nor at albums cover arts path
         True - otherwise
     """
-    
+
     if os.path.isfile(album_cover_path + hashlib.md5(local_path.encode('utf-8')).hexdigest() + '.jpg'):
         return True
     elif os.path.isfile('/'.join([local_path, album_cover_name])):

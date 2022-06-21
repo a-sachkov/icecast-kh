@@ -3,7 +3,7 @@ url = dict(                                                     # urls:
     default='http://<your_server>/default/',                    # default covers if mp3 file has no cover
     albums_covers='http://<your_server>/albums/',               # for album covers
     artists_covers='http://<your_server>/artists/',             # for artists covers
-    stats='http://<your_server/status-json.xsl'                 # icecast stats page (JSON)
+    stats='http://<your_server/admin/stats'                     # Icecast2 stats page (XML) in admin realm
 )
 path = dict(                                                    # dirs on server:
     covers='/<webserver_root>/static/covers/',                  # where covers will be placed
@@ -16,6 +16,8 @@ path = dict(                                                    # dirs on server
 files = dict(
     cover='cover.jpg'                                           # default name for album art file
 )
-default_stream = '/stream'                                      # man stream for get current playing song
+auth_user = 'user'                                              # Icecast2 admin login
+auth_pass = 'password'                                          # Icecast2 admin password
+default_stream = '/stream'                                      # main stream for get current playing song
 cover_size = 600                                                # default cover size (width and height)
 tokens = []                                                     # list of tokens allowed for connect. If empty [] - allow all
