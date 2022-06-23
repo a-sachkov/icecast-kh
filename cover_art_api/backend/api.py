@@ -31,7 +31,7 @@ def get_now_playing(stats_url, stats_stream):
     urllib.request.install_opener(opener)
 
     try:
-        res = urllib.request.urlopen(stats_url)
+        res = urllib.request.urlopen(f"{stats_url}?mount={stats_stream}")
     except urllib.error.URLError as err:
         logging.error(f'get_current_song: Can not open stats url \"{stats_url}\": {err}')
         return False
@@ -40,7 +40,7 @@ def get_now_playing(stats_url, stats_stream):
     root = ET.fromstring(res_body)
 
     try:
-        title = root.findall(f"./source/[@mount='{stats_stream}']/title")[0].text
+        title = root.find(f"./source/[@mount='{stats_stream}']/title").text
     except IndexError as err:
         logging.error(f'get_current_song: Can not find stream \"{stats_stream}\" in stats data: {err}')
         return False
